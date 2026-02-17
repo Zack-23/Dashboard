@@ -18,9 +18,11 @@ from dropbox.files import FileMetadata
 # the refresh token to a redirected fake server to deliver the authorizaed code
 # sent it to the powershell.
 
-REFRESH_TOKEN = "IbAzVJKd9sQAAAAAAAAAAbwv1JHzh9rkqQDT0HjUzocAs2kiEszshFai9AiK2-Sq"
-APP_KEY = "5cwf3yjmkgtzdr9"
-APP_SECRET = "lzh93ghd4mwh0rm"
+# In a local environment, these are stored in a secure .env file.
+# For this portfolio, placeholders are used to protect research data.
+REFRESH_TOKEN = "PROXIED_REFRESH_TOKEN_FOR_SECURITY"
+APP_KEY = "REDACTED_APP_KEY"
+APP_SECRET = "REDACTED_APP_SECRET"
 
 dropbox_access = dropbox.Dropbox(
     # this refreshes the access token.
