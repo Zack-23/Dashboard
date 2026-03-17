@@ -4,63 +4,68 @@ from data_access import *
 # This file handles coloumns of the table, what should the user see
 # and customizable options.
 
-table_data = load_clean_data()
+table_data = load_clean_data() # accessing panda table.
+
 COLUMN_GROUPS = {
     "temperature": ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08"],
     "teros": ["Teros1_mV", "Teros2_mV", "Teros3_mV", "Teros4_mV"],
     "pascal": ["Pascal1", "Pascal2", "Pascal3", "Pascal4"],
 }
 
-def clean_table(df):
-    # this function cleans the table and takes out negative values especially temperature values
-    # and replaces them with nan this is to ensure panda ignores it when calculating.
-    numeric_cols = df.select_dtypes(include="number").columns
-    df[numeric_cols] = df[numeric_cols].where(df[numeric_cols] >= 0, np.nan)
-    return df
+
 
 def base_table():
-    df = clean_table(table_data.copy())
+    df = table_data
+    # all Temperature columns.
     TEMP_COLS = [c for c in df.columns if c.startswith("T") and len(c) == 3]
     VWC_COLS = ["VWC1", "VWC2", "VWC3", "VWC4"]
 
+    # calculating timestamp
     df["Timestamp"] = df["Date"] + " " + df["Std_Time"]
 
-    if TEMP_COLS:
-        df["Average_Temp"] = df[TEMP_COLS].mean(axis=1)
-
+    # calculating average temperature only if temp columns exist.
     if all(c in df.columns for c in VWC_COLS):
-        df["VWC_Range"] = df[VWC_COLS].max(axis=1) - df[VWC_COLS].min(axis=1)
+        df["VWC_Range"] = df[VWC_COLS].max(axis=1) - df[VWC_COLS].min(axis=1) # including VWC range column in panda table.
 
-    return df
-def dashboard_table():
+    return df # returning the cleaned panda table.
+
+
+def dashboard_table(selected_temp = "T01"):
     # This function handles the display rows for the dashboard table.
     # it handles defaults columns
-    DEFAULT_COLUMNS = [ "Timestamp",
-        "Average_Temp",
-        "VWC1",
-        "VWC2",
-        "VWC3",
-        "VWC4",
-        "VWC_Range",]
+    DEFAULT_COLUMNS = DEFAULT_COLUMNS = [
+    "Timestamp",
+    selected_temp,
+    "VWC1",
+    "VWC2",
+    "VWC3",
+    "VWC4",
+    "VWC_Range",
+]
     dashboard_data = base_table()
-    cols = [i for i in DEFAULT_COLUMNS if i in dashboard_data.columns]
+    cols = [i for i in DEFAULT_COLUMNS if i in dashboard_data.columns] # if default columns exist in panda table
+    # return it
+
     return dashboard_data[cols]
 
-def customized_column(options = None):
+def customized_column(options = None, selected_temp = "T01"):
+    # all possible columns
     COLUMN_GROUPS = {
         "temperature": ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08"],
         "teros": ["Teros1_mV", "Teros2_mV", "Teros3_mV", "Teros4_mV"],
         "pascal": ["Pascal1", "Pascal2", "Pascal3", "Pascal4"],
     }
+    # showcasing this as default columns
     DEFAULT_COLUMNS = [
         "Timestamp",
-        "Average_Temp",
+        selected_temp,
         "VWC1",
         "VWC2",
         "VWC3",
         "VWC4",
         "VWC_Range",
     ]
+
     dashboard_data = base_table()
 
     if options is None: # so we dont get into error assign it to empty list.
