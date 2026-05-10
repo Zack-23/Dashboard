@@ -1,3 +1,6 @@
+
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 import streamlit as st
 from table_view import *
 import pandas as pd
@@ -51,7 +54,7 @@ if vwc_cols:
     )
     st.plotly_chart(fig_vwc, use_container_width=True)
 
-# --- Probe health detection ---
+
 # A probe is flagged as faulty if its median reading is below -20°C
 # (no real soil temperature should be anywhere near that)
 FAULT_THRESHOLD = -20.0
@@ -73,7 +76,7 @@ if st.session_state.get("pending_remove_faulty", False):
     st.session_state.temp_graph_select = [t for t in current if t not in faulty_probes]
     st.session_state.pending_remove_faulty = False
 
-# --- Temperature multi-select (always full width) ---
+# Temperature multi-select (always full width)
 selected_temps = st.multiselect(
     "Temperature probes to display",
     options=available_temps,
@@ -133,6 +136,49 @@ if selected_temps:
                 cols[i].metric(label=f"{temp} (avg)", value="N/A")
 else:
     st.info("Select at least one temperature probe to display the graph.")
+
+# --- Dual-Axis: VWC + Temperature Overlay ---
+if vwc_cols and selected_temps:
+    fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
+
+    colors_vwc = px.colors.qualitative.Set2
+    colors_temp = px.colors.qualitative.Dark2
+
+    for i, col in enumerate(vwc_cols):
+        fig_dual.add_trace(
+            go.Scatter(
+                x=graph_view["Timestamp"],
+                y=graph_view[col],
+                name=col,
+                line=dict(color=colors_vwc[i % len(colors_vwc)]),
+                legendgroup="VWC",
+                legendgrouptitle_text="Soil Moisture",
+            ),
+            secondary_y=False,
+        )
+
+    for i, col in enumerate(selected_temps):
+        fig_dual.add_trace(
+            go.Scatter(
+                x=graph_view["Timestamp"],
+                y=graph_view[col],
+                name=col,
+                line=dict(color=colors_temp[i % len(colors_temp)], dash="dot"),
+                legendgroup="Temp",
+                legendgrouptitle_text="Temperature",
+            ),
+            secondary_y=True,
+        )
+
+    fig_dual.update_layout(
+        title_text=f"VWC & Temperature Overlay — Last {hours} hours",
+        legend=dict(groupclick="togglegroup"),
+    )
+    fig_dual.update_yaxes(title_text="VWC", secondary_y=False)
+    fig_dual.update_yaxes(title_text="°C", secondary_y=True)
+    fig_dual.update_xaxes(title_text="Time")
+
+    st.plotly_chart(fig_dual, use_container_width=True)
 
 st.divider()
 
