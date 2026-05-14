@@ -3,6 +3,7 @@
 .venv/
 __pycache__/
 *.pyc
+.env
 
 # data/logs (remove if you actually want to upload it)
 RDL_2025-09-01_USB0.txt
