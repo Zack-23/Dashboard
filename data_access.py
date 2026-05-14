@@ -1,66 +1,71 @@
 import re
 import glob
 import pandas as pd
+from dotenv import load_dotenv
+import os
+from azure.storage.blob import BlobServiceClient
+load_dotenv()
+
+connection_string = os.getenv("AZURE_CONNECTION_STRING")
+container_name = "project-files"
+
 
 
 def clean_data():
-    # This function reads ALL raw data files and stores them in a single clean table.
-    # Uses glob to pick up every RDL_*_USB0.txt in the working directory.
-    files = sorted(glob.glob("RDL_*_USB0.txt"))
+    blob_service = BlobServiceClient.from_connection_string(connection_string)
+    container = blob_service.get_container_client(container_name)
 
-    if not files:
-        print("Warning: No RDL_*_USB0.txt files found.")
+    blobs = list(container.list_blobs())
+    if not blobs:
+        print("Warning: No files found in container.")
         return
 
     output_file = "clean_data"
-
     header = (
-        "Date Std_Time Sample "  # separate headers with space
+        "Date Std_Time Sample "
         "T01 T02 T03 T04 T05 T06 T07 T08 "
         "Teros1_mV VWC1 Pascal1 "
         "Teros2_mV VWC2 Pascal2 "
         "Teros3_mV VWC3 Pascal3 "
         "Teros4_mV VWC4 Pascal4\n"
     )
-    pattern = r"\d{4}/\d{2}/\d{2}"  # this searches for the correct date.
+    pattern = r"\d{4}/\d{2}/\d{2}"
 
     with open(output_file, "w") as output:
         output.write(header)
 
-        for filename in files:
-            with open(filename, "r") as file:
-                for line in file:
-                    valid_line = re.search(pattern, line)
-                    if not valid_line:
+        for blob in blobs:
+            blob_client = container.get_blob_client(blob.name)
+            content = blob_client.download_blob().readall().decode("utf-8")
+
+            for line in content.splitlines():
+                valid_line = re.search(pattern, line)
+                if not valid_line:
+                    continue
+
+                clean_line = line.strip()
+                parts = clean_line.split()
+                cols = []
+                skip_next = False
+
+                for check in parts:
+                    if skip_next:
+                        skip_next = False
                         continue
-
-                    clean_line = line.strip()
-                    parts = clean_line.split()
-                    cols = []
-                    skip_next = False
-
-                    for check in parts:
-                        if skip_next:
-                            skip_next = False
-                            continue
-
-                        if check == "*":
-                            continue
-
-                        match = re.fullmatch(pattern, check)
-
-                        if match:
-                            skip_next = True
-                            continue
-                        else:
-                            cols.append(check)
-
-                    cols = cols[:-2]
-
-                    if len(cols) != 23:
+                    if check == "*":
                         continue
+                    match = re.fullmatch(pattern, check)
+                    if match:
+                        skip_next = True
+                        continue
+                    else:
+                        cols.append(check)
 
-                    output.write(" ".join(cols) + "\n")
+                cols = cols[:-2]
+                if len(cols) != 23:
+                    continue
+
+                output.write(" ".join(cols) + "\n")
 
 
 def load_clean_data():
