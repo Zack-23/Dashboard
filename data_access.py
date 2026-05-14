@@ -3,19 +3,19 @@ import glob
 import pandas as pd
 from dotenv import load_dotenv
 import os
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient # library allows us to connect to Azure storage and read files.
 load_dotenv()
 
-connection_string = os.getenv("AZURE_CONNECTION_STRING")
-container_name = "project-files"
+connection_string = os.getenv("AZURE_CONNECTION_STRING") # get the connection string.
+container_name = "project-files" # get the container name from Azure.
 
 
 
 def clean_data():
-    blob_service = BlobServiceClient.from_connection_string(connection_string)
-    container = blob_service.get_container_client(container_name)
+    blob_service = BlobServiceClient.from_connection_string(connection_string) # connect to the azure storage
+    container = blob_service.get_container_client(container_name) # get the container or folder.
 
-    blobs = list(container.list_blobs())
+    blobs = list(container.list_blobs()) # get all files from the container
     if not blobs:
         print("Warning: No files found in container.")
         return
@@ -29,14 +29,14 @@ def clean_data():
         "Teros3_mV VWC3 Pascal3 "
         "Teros4_mV VWC4 Pascal4\n"
     )
-    pattern = r"\d{4}/\d{2}/\d{2}"
+    pattern = r"\d{4}/\d{2}/\d{2}" # finding valid rows.
 
     with open(output_file, "w") as output:
         output.write(header)
 
         for blob in blobs:
-            blob_client = container.get_blob_client(blob.name)
-            content = blob_client.download_blob().readall().decode("utf-8")
+            blob_client = container.get_blob_client(blob.name) # get access to the file
+            content = blob_client.download_blob().readall().decode("utf-8") # dowload the file content and make it into readable form
 
             for line in content.splitlines():
                 valid_line = re.search(pattern, line)
