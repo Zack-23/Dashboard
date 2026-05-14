@@ -4,3 +4,5 @@ plotly
 numpy
 matplotlib
 openpyxl
+azure-storage-blob
+python-dotenv
